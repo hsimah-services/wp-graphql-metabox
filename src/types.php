@@ -7,8 +7,14 @@ final class WPGraphQL_MetaBox_Types {
         register_graphql_object_type( 'MBKeyValue', [
             'description'   => __( 'Meta Box Key Value type', 'wpgraphql-metabox' ),
             'fields'        => [
-                'key'   => 'String',
-                'value' => 'String',
+                'key'   => [
+                    'type' => 'String',
+                    'description'   => __( 'Key', 'wpgraphql-metabox' ),
+                ],
+                'value' => [
+                    'type' => 'String',
+                    'description'   => __( 'Value', 'wpgraphql-metabox' ),
+                ],
             ],
         ] );
 
@@ -35,7 +41,7 @@ final class WPGraphQL_MetaBox_Types {
                     'type'          => 'Int',
                     'description'   => __( 'Single Image height', 'wpgraphql-metabox' ),
                 ],
-                'fullUrl'       => [
+                'full_url'       => [
                     'type'          => 'String',
                     'description'   => __( 'Single Image full URL', 'wpgraphql-metabox' ),
                 ],

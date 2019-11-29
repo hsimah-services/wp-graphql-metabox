@@ -55,6 +55,7 @@ final class WPGraphQL_MetaBox_Util {
             case 'time':
             case 'select':
             case 'text':
+            case 'url':
                 return 'String';
             case 'fieldset_text':
             case 'text_list':
@@ -70,7 +71,7 @@ final class WPGraphQL_MetaBox_Util {
             case 'range':
                 return 'Float';
             case 'single_image':
-                return 'SingleImage';
+                return 'MBSingleImage';
             default:
                 error_log( __( "Unknown Meta Box type supplied to wp-graphql-metabox: $type" ) );
                 return;
@@ -101,22 +102,24 @@ final class WPGraphQL_MetaBox_Util {
             case 'text_list':
             case 'key_value':
             case 'select_advanced':
+            case 'url':
                 return function( $post ) use ( $field_id ) {
                     return rwmb_meta( $field_id, null, $post->ID );
                 };
             case 'single_image':
-                return function( $post ) {
-                    // TODO resolve this type
-                    return function( $post, $args ) use ( $field_id ) {
-                        return rwmb_meta( $field_id, [ 'size' => $args['size'] ], $post->ID );
-                    };
+                return function( $post, $args ) use ( $field_id ) {
+                    if ( ! isset( $args['size'] ) ) {
+                        $args['size'] = 'thumbnail';
+                    }
+
+                    return rwmb_meta( $field_id, [ 'size' => $args['size'] ], $post->ID );
                 };
         }
     }
 
     public static function resolve_graphql_args( $type ) {
         switch ( $type ) {
-            case 'SingleImage':
+            case 'MBSingleImage':
                 return [
                     'size' => [
                         'type'        => 'MediaItemSizeEnum',

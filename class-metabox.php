@@ -78,7 +78,7 @@ final class WPGraphQL_MetaBox {
         $post_type_object = get_post_type_object( $type );
     
         // check this type and field should be exposed in the schema
-        if ( $post_type_object->show_in_graphql && $field['graphql_name'] ) {
+        if ( $post_type_object->show_in_graphql && ! empty( $field['graphql_name'] ) ) {
             $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type( $field['type'] );
 
             if ( ! $graphql_type ) {
@@ -86,7 +86,7 @@ final class WPGraphQL_MetaBox {
                 return;
             }
 
-            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver( $graphql_type, $field['id'] );
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver( $field['type'], $field['id'] );
             $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args( $graphql_type );
 
             register_graphql_fields( $post_type_object->graphql_single_name, [
@@ -108,15 +108,15 @@ final class WPGraphQL_MetaBox {
      * @return void
      */
     private function init() {
-
-      add_action( 'rwmb_field_registered', [ 'WPGraphQL_MetaBox', 'register_connection' ], 10, 3 );
+        WPGraphQL_MetaBox_Types::register_builtin_types();
+        add_action( 'rwmb_field_registered', [ 'WPGraphQL_MetaBox', 'register_field' ], 10, 3 );
 
     }
 
 }
 
 // TODO find appropriate action to hook into
-add_action( 'init', 'WPGraphQL_MetaBox_init' );
+add_action( 'graphql_init', 'WPGraphQL_MetaBox_init' );
 
 if ( ! function_exists( 'WPGraphQL_MetaBox_init' ) ) {
     /**
