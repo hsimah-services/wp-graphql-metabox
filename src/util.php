@@ -33,7 +33,7 @@ final class WPGraphQL_MetaBox_Util {
             case 'user':
             case 'video':
             case 'wysiwyg':
-                error_log( __( "Unsupported Meta Box type supplied to wp-graphql-metabox: $type" );
+                error_log( __( "Unsupported Meta Box type supplied to wp-graphql-metabox: $type" ) );
                 return;
             case 'switch':
             case 'checkbox':
@@ -72,7 +72,7 @@ final class WPGraphQL_MetaBox_Util {
             case 'single_image':
                 return 'SingleImage';
             default:
-                error_log( __( "Unknown Meta Box type supplied to wp-graphql-metabox: $type" );
+                error_log( __( "Unknown Meta Box type supplied to wp-graphql-metabox: $type" ) );
                 return;
         }
     }
@@ -102,13 +102,13 @@ final class WPGraphQL_MetaBox_Util {
             case 'key_value':
             case 'select_advanced':
                 return function( $post ) use ( $field_id ) {
-                    return rwmb_meta( $field, null, $post->ID );
+                    return rwmb_meta( $field_id, null, $post->ID );
                 };
             case 'single_image':
                 return function( $post ) {
                     // TODO resolve this type
                     return function( $post, $args ) use ( $field_id ) {
-                        return rwmb_meta( $field, [ 'size' => $args['size'] ], $post->ID );
+                        return rwmb_meta( $field_id, [ 'size' => $args['size'] ], $post->ID );
                     };
                 };
         }
