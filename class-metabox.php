@@ -64,6 +64,13 @@ final class WPGraphQL_MetaBox {
 
     }
 
+    /**
+     * Register Meta Box field with WPGraphQL
+     *
+     * @since  0.0.1
+     * @access protected
+     * @return void
+     */
     public static function register_field( $field, $type, $object_type ) {
         // TODO support other types
         if ( 'post' !== $object_type ) return;
@@ -72,13 +79,22 @@ final class WPGraphQL_MetaBox {
     
         // check this type and field should be exposed in the schema
         if ( $post_type_object->show_in_graphql && $field['graphql_name'] ) {
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type( $field['type'] );
+
+            if ( ! $graphql_type ) {
+                // not implemented
+                return;
+            }
+
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver( $graphql_type, $field['id'] );
+            $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args( $graphql_type );
+
             register_graphql_fields( $post_type_object->graphql_single_name, [
-                $field['graphql_name'] => [
-                    'type' => 'Int', // TODO add type resolver for other types
-                    'description' => $field['name'],
-                    'resolve' => function( $post ) {
-                        return rwmb_meta( $field['id'], null, $post->ID );
-                    },
+                $field['graphql_name']  => [
+                    'type'          => $graphql_type,
+                    'description'   => $field['name'],
+                    'resolve'       => $graphql_resolver,
+                    'args'          => $graphql_args,
                 ]
             ] );
         }
@@ -93,7 +109,7 @@ final class WPGraphQL_MetaBox {
      */
     private function init() {
 
-      add_action( 'rwmb_field_registered', [ 'WPGraphQL_MetaBox', 'register_connection' ], 1 );
+      add_action( 'rwmb_field_registered', [ 'WPGraphQL_MetaBox', 'register_connection' ], 10, 3 );
 
     }
 
@@ -109,6 +125,12 @@ if ( ! function_exists( 'WPGraphQL_MetaBox_init' ) ) {
      * @since 0.0.1
      */
     function WPGraphQL_MetaBox_init() {
+
+        $files = glob( plugin_dir_path( __FILE__ ) . '/src/*.php' );
+
+        foreach ( $files as $file ) {
+            require_once $file; 
+        }
 
         /**
          * Return an instance of the action
