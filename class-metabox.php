@@ -79,52 +79,24 @@ final class WPGraphQL_MetaBox {
     
         // check this type and field should be exposed in the schema
         if ( $post_type_object->show_in_graphql && $field['graphql_name'] ) {
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type( $field['type'] );
+
+            if ( ! $graphql_type ) {
+                // not implemented
+                return;
+            }
+
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver( $graphql_type, $field['id'] );
+            $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args( $graphql_type );
+
             register_graphql_fields( $post_type_object->graphql_single_name, [
-                $field['graphql_name'] => [
-                    'type' => self::resolve_graphql_type( $field['type'] ),
-                    'description' => $field['name'],
-                    'resolve' => function( $post ) {
-                        return rwmb_meta( $field['id'], null, $post->ID );
-                    },
+                $field['graphql_name']  => [
+                    'type'          => $graphql_type,
+                    'description'   => $field['name'],
+                    'resolve'       => $graphql_resolver,
+                    'args'          => $graphql_args,
                 ]
             ] );
-        }
-    }
-
-    /**
-     * Resolve Meta Box type to GraphQL type
-     *
-     * @since  0.0.1
-     * @access protected
-     * @return string
-     */
-    private static function resolve_graphql_type( $field_type ) {
-        switch ( $field_type ) {
-            case 'custom_html':
-            case 'url':
-            case 'datetime':
-            case 'text':
-            case 'wysiwyg':
-                return 'String';
-            case 'number':
-                // TODO int or float?
-                return 'Int';
-            case 'range':
-                // TODO int or float?
-                return 'Float';
-            case 'checkbox':
-            case 'switch':
-                return 'Boolean';
-            case 'taxonomy':
-                // TODO
-                return;
-            case 'group':
-                // TODO
-                return;
-            case 'post':
-            case 'user':
-                // this should be a connection
-                return;
         }
     }
 
@@ -153,6 +125,12 @@ if ( ! function_exists( 'WPGraphQL_MetaBox_init' ) ) {
      * @since 0.0.1
      */
     function WPGraphQL_MetaBox_init() {
+
+        $files = glob( plugin_dir_path( __FILE__ ) . '/src/*.php' );
+
+        foreach ( $files as $file ) {
+            require_once $file; 
+        }
 
         /**
          * Return an instance of the action
