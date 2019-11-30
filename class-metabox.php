@@ -1,9 +1,7 @@
 <?php
 
-use WPGraphQL\Data\DataSource;
-use WPGraphQL\Data\Connection\PostObjectConnectionResolver;
-
-final class WPGraphQL_MetaBox {
+final class WPGraphQL_MetaBox
+{
 
     /**
      * Stores the instance of the WPGraphQL_MetaBox class
@@ -21,9 +19,10 @@ final class WPGraphQL_MetaBox {
      * @since  0.0.1
      * @access public
      */
-    public static function instance() {
+    public static function instance()
+    {
 
-        if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WPGraphQL_MetaBox ) ) {
+        if (!isset(self::$instance) && !(self::$instance instanceof WPGraphQL_MetaBox)) {
             self::$instance = new WPGraphQL_MetaBox();
             self::$instance->init();
         }
@@ -43,11 +42,11 @@ final class WPGraphQL_MetaBox {
      * @access public
      * @return void
      */
-    public function __clone() {
+    public function __clone()
+    {
 
         // Cloning instances of the class is forbidden.
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'The WPGraphQL_MetaBox class should not be cloned.', 'wpgraphiql-mb-relationships' ), '0.0.1' );
-
+        _doing_it_wrong(__FUNCTION__, esc_html__('The WPGraphQL_MetaBox class should not be cloned.', 'wpgraphiql-mb-relationships'), '0.0.1');
     }
 
     /**
@@ -57,11 +56,11 @@ final class WPGraphQL_MetaBox {
      * @access protected
      * @return void
      */
-    public function __wakeup() {
+    public function __wakeup()
+    {
 
         // De-serializing instances of the class is forbidden.
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'De-serializing instances of the WPGraphQL_MetaBox class is not allowed', 'wpgraphiql-mb-relationships' ), '0.0.1' );
-
+        _doing_it_wrong(__FUNCTION__, esc_html__('De-serializing instances of the WPGraphQL_MetaBox class is not allowed', 'wpgraphiql-mb-relationships'), '0.0.1');
     }
 
     /**
@@ -71,33 +70,46 @@ final class WPGraphQL_MetaBox {
      * @access protected
      * @return void
      */
-    public static function register_field( $field, $type, $object_type ) {
-        // TODO support other types
-        if ( 'post' !== $object_type ) return;
-        
-        $post_type_object = get_post_type_object( $type );
-    
-        // check this type and field should be exposed in the schema
-        if ( $post_type_object->show_in_graphql && ! empty( $field['graphql_name'] ) ) {
-            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type( $field['type'] );
+    public static function register_field($field, $type, $object_type)
+    {
+        switch ($object_type) {
+            case 'post':
+                return self::register_post_field($field, $type);
+            case 'user':
+                return self::register_user_field($field, $type, $object_type);
+        }
+    }
 
-            if ( ! $graphql_type ) {
+    private static function register_post_field($field, $type)
+    {
+        $post_type_object = get_post_type_object($type);
+
+        // check this type and field should be exposed in the schema
+        if ($post_type_object->show_in_graphql && !empty($field['graphql_name'])) {
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field['type'], $field['multiple']);
+
+            if (!$graphql_type) {
                 // not implemented
                 return;
             }
 
-            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver( $field['type'], $field['id'] );
-            $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args( $graphql_type );
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field['type'], $field['id']);
+            $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type);
 
-            register_graphql_fields( $post_type_object->graphql_single_name, [
+            register_graphql_fields($post_type_object->graphql_single_name, [
                 $field['graphql_name']  => [
                     'type'          => $graphql_type,
                     'description'   => $field['name'],
                     'resolve'       => $graphql_resolver,
                     'args'          => $graphql_args,
                 ]
-            ] );
+            ]);
         }
+    }
+
+    private static function register_user_field($field, $type, $object_type)
+    {
+        // TODO resolve fields on users
     }
 
     /**
@@ -107,29 +119,29 @@ final class WPGraphQL_MetaBox {
      * @since  0.0.1
      * @return void
      */
-    private function init() {
+    private function init()
+    {
         WPGraphQL_MetaBox_Types::register_builtin_types();
-        add_action( 'rwmb_field_registered', [ 'WPGraphQL_MetaBox', 'register_field' ], 10, 3 );
-
+        add_action('rwmb_field_registered', ['WPGraphQL_MetaBox', 'register_field'], 10, 3);
     }
-
 }
 
 // TODO find appropriate action to hook into
-add_action( 'graphql_init', 'WPGraphQL_MetaBox_init' );
+add_action('graphql_init', 'WPGraphQL_MetaBox_init');
 
-if ( ! function_exists( 'WPGraphQL_MetaBox_init' ) ) {
+if (!function_exists('WPGraphQL_MetaBox_init')) {
     /**
      * Function that instantiates the plugins main class
      *
      * @since 0.0.1
      */
-    function WPGraphQL_MetaBox_init() {
+    function WPGraphQL_MetaBox_init()
+    {
 
-        $files = glob( plugin_dir_path( __FILE__ ) . '/src/*.php' );
+        $files = glob(plugin_dir_path(__FILE__) . '/src/*.php');
 
-        foreach ( $files as $file ) {
-            require_once $file; 
+        foreach ($files as $file) {
+            require_once $file;
         }
 
         /**
