@@ -46,7 +46,7 @@ final class WPGraphQL_MetaBox
     {
 
         // Cloning instances of the class is forbidden.
-        _doing_it_wrong(__FUNCTION__, esc_html__('The WPGraphQL_MetaBox class should not be cloned.', 'wpgraphiql-mb-relationships'), '0.0.1');
+        _doing_it_wrong(__FUNCTION__, esc_html__('The WPGraphQL_MetaBox class should not be cloned.', 'wpgraphql-metabox'), '0.0.1');
     }
 
     /**
@@ -60,7 +60,7 @@ final class WPGraphQL_MetaBox
     {
 
         // De-serializing instances of the class is forbidden.
-        _doing_it_wrong(__FUNCTION__, esc_html__('De-serializing instances of the WPGraphQL_MetaBox class is not allowed', 'wpgraphiql-mb-relationships'), '0.0.1');
+        _doing_it_wrong(__FUNCTION__, esc_html__('De-serializing instances of the WPGraphQL_MetaBox class is not allowed', 'wpgraphql-metabox'), '0.0.1');
     }
 
     /**
@@ -120,6 +120,35 @@ final class WPGraphQL_MetaBox
         // TODO resolve fields on users
     }
 
+    public static function add_field_settings($advanced_fields, $label_prefix, $args_prefix)
+    {
+        return array_merge($advanced_fields, [
+            [
+                'name' => __('WPGraphQL Integration', 'wpgraphql-metabox'),
+                'type' => 'heading',
+            ],
+            [
+                'name' => __('Show in GraphQL?', 'wpgraphql-metabox'),
+                'id'   => $args_prefix . 'show_in_graphql',
+                'type' => 'checkbox',
+                'std'  => 0,
+                'desc' => __('Add this type to the GraphQL schema.', 'wpgraphql-metabox'),
+            ],
+            [
+                'name'  => __('GraphQL single name', 'wpgraphql-metabox'),
+                'id'    => $args_prefix . 'graphql_single_name',
+                'type'  => 'text',
+                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
+            ],
+            [
+                'name'  => __('GraphQL plural name', 'wpgraphql-metabox'),
+                'id'    => $args_prefix . 'graphql_plural_name',
+                'type'  => 'text',
+                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
+            ],
+        ]);
+    }
+
     /**
      * Initialise plugin.
      *
@@ -129,6 +158,7 @@ final class WPGraphQL_MetaBox
      */
     private function init()
     {
+        add_filter('rwmb_advanced_field_settings', ['WPGraphQL_MetaBox', 'add_field_settings'], 10, 3);
         WPGraphQL_MetaBox_Types::register_builtin_types();
         add_action('rwmb_field_registered', ['WPGraphQL_MetaBox', 'register_field'], 10, 3);
     }

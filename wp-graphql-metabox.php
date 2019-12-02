@@ -41,7 +41,7 @@ if (!class_exists('WPGraphQL_MetaBox')) {
 					?>
 				<div class="error notice">
 					<p>
-						<?php _e(sprintf('Both WPGraphQL (v%s+) and Meta Box (v5.2.3) must be active for "wp-graphql-metabox" to work', $wp_graphql_required_min_version), 'wpgraphql-metabox'); ?>
+						<?php _e(sprintf('Both WPGraphQL (v%s+) and Meta Box (v5.2.3) must be active for "wpgraphql-metabox" to work', $wp_graphql_required_min_version), 'wpgraphql-metabox'); ?>
 					</p>
 				</div>
 <?php
