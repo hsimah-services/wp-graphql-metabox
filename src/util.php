@@ -39,7 +39,7 @@ final class WPGraphQL_MetaBox_Util
                 return;
             case 'switch':
             case 'checkbox':
-                return 'Boolean';
+                return $multiple ?  ['list_of' => 'Boolean'] : 'Boolean';
             case 'checkbox_list':
                 return [
                     'list_of' => 'Boolean',
@@ -58,7 +58,7 @@ final class WPGraphQL_MetaBox_Util
             case 'select':
             case 'text':
             case 'url':
-                return 'String';
+                return $multiple ?  ['list_of' => 'String'] : 'String';
             case 'fieldset_text':
             case 'text_list':
             case 'select_advanced':
@@ -71,7 +71,7 @@ final class WPGraphQL_MetaBox_Util
                 ];
             case 'number':
             case 'range':
-                return 'Float';
+                return $multiple ?  ['list_of' => 'Float'] : 'Float';
             case 'single_image':
                 return 'MBSingleImage';
             case 'user':
@@ -104,13 +104,24 @@ final class WPGraphQL_MetaBox_Util
                 return $multiple ? ['list_of' => $post_type_object->graphql_single_name] : $post_type_object->graphql_single_name;
             default:
                 error_log(__("Unknown Meta Box type supplied to wp-graphql-metabox: $type"));
-                return;
         }
     }
 
     public static function resolve_graphql_resolver($type, $field_id)
     {
         switch ($type) {
+            case 'number':
+            case 'range':
+                return function ($post) use ($field_id) {
+                    $field = rwmb_meta($field_id, null, $post->ID);
+                    $resolve_field = function ($field_data) {
+                        return is_numeric($field_data) ? $field_data : null;
+                    };
+                    if (is_array($field)) {
+                        return array_map($resolve_field, $field);
+                    }
+                    return $resolve_field($field);
+                };
             case 'switch':
             case 'checkbox':
             case 'checkbox_list':
@@ -128,45 +139,55 @@ final class WPGraphQL_MetaBox_Util
             case 'select':
             case 'text':
             case 'fieldset_text':
-            case 'number':
-            case 'range':
             case 'text_list':
             case 'key_value':
             case 'select_advanced':
             case 'url':
                 return function ($post) use ($field_id) {
-                    return rwmb_meta($field_id, null, $post->ID);
+                    $field = rwmb_meta($field_id, null, $post->ID);
+                    $resolve_field = function ($field_data) {
+                        return isset($field_data) ? $field_data : null;
+                    };
+                    if (is_array($field)) {
+                        return array_map($resolve_field, $field);
+                    }
+                    return $resolve_field($field);
                 };
             case 'single_image':
                 return function ($post, $args) use ($field_id) {
                     $size = !isset($args['size']) ? 'thumbnail' : $args['size'];
-
-                    return rwmb_meta($field_id, ['size' => $size], $post->ID);
+                    $field = rwmb_meta($field_id, ['size' => $size], $post->ID);
+                    $resolve_field = function ($field_data) {
+                        return isset($field_data) ? $field_data : null;
+                    };
+                    if (is_array($field)) {
+                        return array_map($resolve_field, $field);
+                    }
+                    return $resolve_field($field);
                 };
             case 'user':
-                return function ($post, array $args, $context) use ($field_id) {
-                    $user_id = rwmb_meta($field_id, null, $post->ID);
-                    if (is_array($user_id)) {
-                        $users = [];
-                        foreach($user_id as $id) {
-                            $users[] = DataSource::resolve_user($id, $context);
-                        }
-                        return $users;
+                return function ($post, $args, $context) use ($field_id) {
+                    $field = rwmb_meta($field_id, null, $post->ID);
+                    $resolve_field = function ($field_data) use ($context) {
+                        $user = DataSource::resolve_user($field_data, $context);
+                        return isset($user) ? $user : null;
+                    };
+                    if (is_array($field)) {
+                        return array_map($resolve_field, $field);
                     }
-                    $user = DataSource::resolve_user($user_id, $context);
-                    return $user ? $user : null;
+                    return $resolve_field($field);
                 };
             case 'post':
-                return function ($post, array $args, $context) use ($field_id, $type) {
-                    $post_id = rwmb_meta($field_id, null, $post->ID);
-                    if (is_array($post_id)) {
-                        $posts = [];
-                        foreach ($post_id as $id) {
-                            $posts[] = DataSource::resolve_post_object($id, $context);
-                        }
-                        return $posts;
+                return function ($post, $args, $context) use ($field_id) {
+                    $field = rwmb_meta($field_id, null, $post->ID);
+                    $resolve_field = function ($field_data) use ($context) {
+                        $post = DataSource::resolve_post_object($field_data, $context);
+                        return isset($post) ? $post : null;
+                    };
+                    if (is_array($field)) {
+                        return array_map($resolve_field, $field);
                     }
-                    return DataSource::resolve_post_object($post_id, $context);
+                    return $resolve_field($field);
                 };
         }
     }
