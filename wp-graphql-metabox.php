@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: WP GraphQL Meta Box Integration
+ * Plugin Name: WPGraphQL Meta Box Integration
  * Plugin URI: https://github.com/hsimah/wp-graphql-metabox
  * Description: WP GraphQL provider for Meta Box
  * Author: hsimah
@@ -13,7 +13,7 @@
  *
  * @package  WPGraphQL_MetaBox
  * @author   hsimah
- * @version  0.1.0
+ * @version  0.0.1
  */
 
 // Exit if accessed directly.
@@ -41,7 +41,7 @@ if (!class_exists('WPGraphQL_MetaBox')) {
 					?>
 				<div class="error notice">
 					<p>
-						<?php _e(sprintf('Both WPGraphQL (v%s+) and Meta Box (v3.3.9) must be active for "wp-graphql-metabox" to work', $wp_graphql_required_min_version), 'wpgraphql-metabox'); ?>
+						<?php _e(sprintf('Both WPGraphQL (v%s+) and Meta Box (v5.2.3) must be active for "wp-graphql-metabox" to work', $wp_graphql_required_min_version), 'wpgraphql-metabox'); ?>
 					</p>
 				</div>
 <?php
