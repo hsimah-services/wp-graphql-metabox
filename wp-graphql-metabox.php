@@ -26,7 +26,7 @@ if (!class_exists('WPGraphQL_MetaBox')) {
 	add_action('admin_init', function () {
 		$wp_graphql_required_min_version = '0.3.2';
 
-		if (!class_exists('MBR_Loader') || !class_exists('WPGraphQL') || (defined('WPGRAPHQL_VERSION') && version_compare(WPGRAPHQL_VERSION, $wp_graphql_required_min_version, 'lt'))) {
+		if (!class_exists('RWMB_Loader') || !class_exists('WPGraphQL') || (defined('WPGRAPHQL_VERSION') && version_compare(WPGRAPHQL_VERSION, $wp_graphql_required_min_version, 'lt'))) {
 
 			/**
 			 * For users with lower capabilities, don't show the notice
@@ -52,6 +52,6 @@ if (!class_exists('WPGraphQL_MetaBox')) {
 	}
 });
 
-if (class_exists('MBR_Loader') && class_exists('WPGraphQL'))
+if (class_exists('RWMB_Loader') && class_exists('WPGraphQL'))
 	require_once __DIR__ . '/class-metabox.php';
 }
