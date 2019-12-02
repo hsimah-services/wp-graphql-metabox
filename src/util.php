@@ -35,7 +35,7 @@ final class WPGraphQL_MetaBox_Util
             case 'taxonomy_advanced':
             case 'video':
             case 'wysiwyg':
-                error_log(__("Unsupported Meta Box type supplied to wp-graphql-metabox: $type"));
+                error_log(__("Unsupported Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
                 return;
             case 'switch':
             case 'checkbox':
@@ -98,12 +98,12 @@ final class WPGraphQL_MetaBox_Util
                 }
                 $post_type_object = get_post_type_object($post_type);
                 if (!$post_type_object || !$post_type_object->show_in_graphql) {
-                    error_log(__("Unknown Meta Box type supplied to wp-graphql-metabox: $post_type"));
+                    error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $post_type", 'wpgraphql-metabox'));
                     return;
                 }
                 return $multiple ? ['list_of' => $post_type_object->graphql_single_name] : $post_type_object->graphql_single_name;
             default:
-                error_log(__("Unknown Meta Box type supplied to wp-graphql-metabox: $type"));
+                error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
         }
     }
 
