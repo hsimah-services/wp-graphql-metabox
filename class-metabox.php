@@ -115,9 +115,41 @@ final class WPGraphQL_MetaBox
         }
     }
 
+    /**
+     * Register User field
+     *
+     * @access private
+     * @since  0.2.0
+     * @return void
+     */
     private static function register_user_field($field, $type, $object_type)
     {
-        // TODO resolve fields on users
+        // Without this MB extension this will fail
+        if (!class_exists('RWMB_User_Storage')) {
+            throw new Error('MB User Meta plugin required to register user fields');
+        }
+
+        if (!empty($field['graphql_name'])) {
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field['type'], $field['multiple']);
+            if (!$graphql_type) {
+                // not implemented
+                return;
+            }
+
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field['type'], $field['id'], ['object_type' => 'user']);
+            $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type);
+
+            register_graphql_field(
+                'User',
+                $field['graphql_name'],
+                [
+                    'type'          => $graphql_type,
+                    'description'   => $field['name'],
+                    'resolve'       => $graphql_resolver,
+                    'args'          => $graphql_args,
+                ]
+            );
+        }
     }
 
     public static function add_field_settings($advanced_fields, $label_prefix, $args_prefix)
