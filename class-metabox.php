@@ -164,27 +164,16 @@ final class WPGraphQL_MetaBox
     }
 }
 
-// TODO find appropriate action to hook into
-add_action('graphql_init', 'WPGraphQL_MetaBox_init');
+add_action('init', function () {
 
-if (!function_exists('WPGraphQL_MetaBox_init')) {
-    /**
-     * Function that instantiates the plugins main class
-     *
-     * @since 0.0.1
-     */
-    function WPGraphQL_MetaBox_init()
-    {
+    $files = glob(plugin_dir_path(__FILE__) . '/src/*.php');
 
-        $files = glob(plugin_dir_path(__FILE__) . '/src/*.php');
-
-        foreach ($files as $file) {
-            require_once $file;
-        }
-
-        /**
-         * Return an instance of the action
-         */
-        return \WPGraphQL_MetaBox::instance();
+    foreach ($files as $file) {
+        require_once $file;
     }
-}
+
+    /**
+     * Return an instance of the action
+     */
+    return \WPGraphQL_MetaBox::instance();
+});
