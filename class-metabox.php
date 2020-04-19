@@ -94,7 +94,7 @@ final class WPGraphQL_MetaBox
             $post_type_object->show_in_graphql && !empty($field['graphql_name'])
         ) {
             $post_type = array_key_exists('post_type', $field) ? $field['post_type'] : null;
-            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field['type'], $field['multiple'], $post_type);
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field, $post_type);
 
             if (!$graphql_type) {
                 // not implemented
@@ -130,7 +130,7 @@ final class WPGraphQL_MetaBox
         }
 
         if (!empty($field['graphql_name'])) {
-            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field['type'], $field['multiple']);
+            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
             if (!$graphql_type) {
                 // not implemented
                 return;
@@ -190,7 +190,8 @@ final class WPGraphQL_MetaBox
      */
     private function init()
     {
-        add_filter('rwmb_advanced_field_settings', ['WPGraphQL_MetaBox', 'add_field_settings'], 10, 3);
+        add_filter('mbcpt_advanced_fields', ['WPGraphQL_MetaBox', 'add_field_settings'], 10, 3);
+        add_filter('mbcpt_advanced_taxonomy_fields', ['WPGraphQL_MetaBox', 'add_field_settings'], 10, 3);
         WPGraphQL_MetaBox_Types::register_builtin_types();
         add_action('rwmb_field_registered', ['WPGraphQL_MetaBox', 'register_field'], 10, 3);
     }

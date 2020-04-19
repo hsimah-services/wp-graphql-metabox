@@ -13,8 +13,14 @@ final class WPGraphQL_MetaBox_Util
      * @access public
      * @return string
      */
-    public static function resolve_graphql_type($type, $multiple, $post_type = null)
+    public static function resolve_graphql_type($field, $post_type = null)
     {
+        if (!is_array($field)) {
+            return null;
+        }
+        $type = $field['type'];
+        $multiple = $field['multiple'];
+
         switch ($type) {
             case 'autocomplete':
             case 'button':
@@ -32,12 +38,15 @@ final class WPGraphQL_MetaBox_Util
             case 'map':
             case 'plupload_image':
             case 'slider':
-            case 'taxonomy':
-            case 'taxonomy_advanced':
             case 'video':
             case 'wysiwyg':
                 error_log(__("Unsupported Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
                 return;
+            case 'taxonomy':
+            case 'taxonomy_advanced':
+                $taxonomy = get_taxonomy($field['taxonomy'][0]);
+
+                return $multiple ? ['list_of' => $taxonomy->graphql_single_name] : $taxonomy->graphql_single_name;
             case 'switch':
             case 'checkbox':
                 return $multiple ?  ['list_of' => 'Boolean'] : 'Boolean';
@@ -178,6 +187,25 @@ final class WPGraphQL_MetaBox_Util
                     };
 
                     return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                };
+            case 'taxonomy':
+            case 'taxonomy_advanced':
+                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                    $field = self::get_field($node, $field_id, $meta_args);
+                    if (!isset($field) || empty($field)) {
+                        return [];
+                    }
+                    return array_reduce($field, function ($tags, $current) use ($context) {
+                        $taxonomy = DataSource::resolve_term_object($current->term_id, $context);
+                        if ($taxonomy) {
+                            array_push($tags, $taxonomy);
+                        }
+                        return $tags;
+                    }, []);
+                };
+            default:
+                return function () {
+                    return null;
                 };
         }
     }
