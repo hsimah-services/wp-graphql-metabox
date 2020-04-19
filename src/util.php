@@ -1,6 +1,7 @@
 <?php
 
 use WPGraphQL\Data\DataSource;
+use WPGraphQL\Model\User;
 
 final class WPGraphQL_MetaBox_Util
 {
@@ -9,10 +10,10 @@ final class WPGraphQL_MetaBox_Util
      * Resolve Meta Box type to GraphQL type
      *
      * @since  0.0.1
-     * @access protected
+     * @access public
      * @return string
      */
-    public static function resolve_graphql_type($type, $multiple, $post_type)
+    public static function resolve_graphql_type($type, $multiple, $post_type = null)
     {
         switch ($type) {
             case 'autocomplete':
@@ -107,20 +108,17 @@ final class WPGraphQL_MetaBox_Util
         }
     }
 
-    public static function resolve_graphql_resolver($type, $field_id)
+    public static function resolve_graphql_resolver($type, $field_id, $meta_args = null)
     {
         switch ($type) {
             case 'number':
             case 'range':
-                return function ($post) use ($field_id) {
-                    $field = rwmb_meta($field_id, null, $post->ID);
+                return function ($node) use ($field_id, $meta_args) {
+                    $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) {
                         return is_numeric($field_data) ? $field_data : null;
                     };
-                    if (is_array($field)) {
-                        return array_map($resolve_field, $field);
-                    }
-                    return $resolve_field($field);
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'switch':
             case 'checkbox':
@@ -143,55 +141,55 @@ final class WPGraphQL_MetaBox_Util
             case 'key_value':
             case 'select_advanced':
             case 'url':
-                return function ($post) use ($field_id) {
-                    $field = rwmb_meta($field_id, null, $post->ID);
+                return function ($node) use ($field_id, $meta_args) {
+                    $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) {
                         return isset($field_data) ? $field_data : null;
                     };
-                    if (is_array($field)) {
-                        return array_map($resolve_field, $field);
-                    }
-                    return $resolve_field($field);
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'single_image':
-                return function ($post, $args) use ($field_id) {
+                return function ($node, $args) use ($field_id, $meta_args) {
                     $size = !isset($args['size']) ? 'thumbnail' : $args['size'];
-                    $field = rwmb_meta($field_id, ['size' => $size], $post->ID);
+                    $merged_args = array_merge($meta_args, ['size' => $size]);
+                    $field = rwmb_meta($field_id, $merged_args, $node->ID);
                     $resolve_field = function ($field_data) {
                         return isset($field_data) ? $field_data : null;
                     };
-                    if (is_array($field)) {
-                        return array_map($resolve_field, $field);
-                    }
-                    return $resolve_field($field);
+
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'user':
-                return function ($post, $args, $context) use ($field_id) {
-                    $field = rwmb_meta($field_id, null, $post->ID);
+                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                    $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
                         $user = DataSource::resolve_user($field_data, $context);
                         return isset($user) ? $user : null;
                     };
-                    if (is_array($field)) {
-                        return array_map($resolve_field, $field);
-                    }
-                    return $resolve_field($field);
+
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'post':
-                return function ($post, $args, $context) use ($field_id) {
-                    $field = rwmb_meta($field_id, null, $post->ID);
+                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                    $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
-                        $post = DataSource::resolve_post_object($field_data, $context);
-                        return isset($post) ? $post : null;
+                        $node = DataSource::resolve_post_object($field_data, $context);
+                        return isset($node) ? $node : null;
                     };
-                    if (is_array($field)) {
-                        return array_map($resolve_field, $field);
-                    }
-                    return $resolve_field($field);
+
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
         }
     }
 
+    /**
+     * Resolves GraphQL input args for a given GraphQL type
+     *
+     * @var string          The GraphQL type name
+     * @return  array|null  The GraphQL arg config
+     * @since  0.1.0
+     * @access public
+     */
     public static function resolve_graphql_args($type)
     {
         switch ($type) {
@@ -205,5 +203,23 @@ final class WPGraphQL_MetaBox_Util
             default:
                 return null;
         }
+    }
+
+    /**
+     * Resolves metabox field data by entity type
+     *
+     * @var \WPGraphQL\Model    The node to resolve
+     * @var string              The metabox field id
+     * @var array               The metabox field args
+     * @return  mixed           The field contents
+     * @since  0.2.0
+     * @access private
+     */
+    private static function get_field($node, $field_id, $args = null)
+    {
+        if ($node instanceof User) {
+            return rwmb_meta($field_id, $args, $node->userId);
+        }
+        return rwmb_meta($field_id, $args, $node->ID);
     }
 }
