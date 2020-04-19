@@ -6,10 +6,11 @@ Download and install like any WordPress plugin.
 ## Documentation
 The WPGraphQL documentation can be found [here](https://docs.wpgraphql.com).
 
-- Requires PHP 5.5+
-- Requires WordPress 4.7+
-- Requires WPGraphQL 0.3.8+
-- Requires Meta Box 5.2.1+
+- Requires PHP 7.3+
+- Requires WordPress 5.4+
+- Requires WPGraphQL 0.8.1+
+- Requires Meta Box 5.2.10+
+  - Requires MB User Meta extension for User fields
 
 ## Overview
 This plugin provides an integration for [Meta Box](https://metabox.io/) and [WPGraphQL](https://www.wpgraphql.com/).
