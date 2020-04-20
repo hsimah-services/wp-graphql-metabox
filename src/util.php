@@ -13,7 +13,7 @@ final class WPGraphQL_MetaBox_Util
      * @access public
      * @return string
      */
-    public static function resolve_graphql_type($field, $post_type = null)
+    public static function resolve_graphql_type($field)
     {
         if (!is_array($field)) {
             return null;
@@ -87,34 +87,48 @@ final class WPGraphQL_MetaBox_Util
             case 'user':
                 return $multiple ? ['list_of' => 'User'] : 'User';
             case 'post':
-                if (is_array($post_type) && count($post_type) > 0) {
-                    // TODO maybe make unions for multiple post types
-                    // $union_types = [];
-                    // foreach ($post_type as $type) {
-                    //     $graphql_type = self::get_graphql_type_name($type);
-                    //     if ($graphql_type) {
-                    //         array_push($union_types, $graphql_type);
-                    //     }
-                    // }
-                    // register_graphql_union_type('PetUnion', [
-                    //     'types'       => array_map(function ($union_type) {
-                    //         return \WPGraphQL\TypeRegistry::get_type($union_type);
-                    //     }, $union_types),
-                    //     'resolveType' => function ($post) {
-                    //         return \WPGraphQL\TypeRegistry::get_type($post['type']);
-                    //     }
-                    // ]);
-                    $post_type = $post_type[0];
-                }
+                $post_type = true === is_array($field['post_type']) ? $field['post_type'][0] : $field['post_type'];
                 $post_type_object = get_post_type_object($post_type);
+
                 if (!$post_type_object || !$post_type_object->show_in_graphql) {
                     error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $post_type", 'wpgraphql-metabox'));
                     return;
                 }
-                return $multiple ? ['list_of' => $post_type_object->graphql_single_name] : $post_type_object->graphql_single_name;
+
+                $graphql_type =  $post_type_object->graphql_single_name;
+                return $multiple ? ['list_of' => $graphql_type] : $graphql_type;
             default:
                 error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
         }
+    }
+
+    /**
+     * Resolves metabox union type for post-to-post with multiple type fields
+     *
+     * @var mixed           The metabox field configuration
+     * @return string|mixed The GraphQL type
+     * @since  0.2.1
+     * @access public
+     */
+    public static function resolve_graphql_union_type($field)
+    {
+        $union_names = array_reduce($field['post_type'], function ($a, $c) {
+            $post_type_object = get_post_type_object($c);
+            if (true === $post_type_object->show_in_graphql) {
+                array_push($a, ucfirst($post_type_object->graphql_single_name));
+            }
+            return $a;
+        }, []);
+
+        $union_name = ucfirst($field['graphql_name']) . 'To' . join('And', $union_names) . 'Union';
+        register_graphql_union_type($union_name, [
+            'typeNames'       => $union_names,
+            'resolveType' => function ($union) {
+                return DataSource::resolve_node_type($union);
+            }
+        ]);
+
+        return $field['multiple'] ? ['list_of' => $union_name] : $union_name;
     }
 
     public static function resolve_graphql_resolver($type, $field_id, $meta_args = null)
@@ -192,16 +206,11 @@ final class WPGraphQL_MetaBox_Util
             case 'taxonomy_advanced':
                 return function ($node, $args, $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
-                    if (!isset($field) || empty($field)) {
-                        return [];
-                    }
-                    return array_reduce($field, function ($tags, $current) use ($context) {
-                        $taxonomy = DataSource::resolve_term_object($current->term_id, $context);
-                        if ($taxonomy) {
-                            array_push($tags, $taxonomy);
-                        }
-                        return $tags;
-                    }, []);
+                    $resolve_field = function ($field_data) use ($context) {
+                        $taxonomy = DataSource::resolve_term_object($field_data->term_id, $context);
+                        return isset($taxonomy) ? $taxonomy : null;
+                    };
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             default:
                 return function () {
