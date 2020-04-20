@@ -110,8 +110,9 @@ final class WPGraphQL_MetaBox_Util
      * @since  0.2.1
      * @access public
      */
-    public static function resolve_graphql_union_type($field) {
-        $union_names = array_reduce($field['post_type'], function($a, $c) {
+    public static function resolve_graphql_union_type($field)
+    {
+        $union_names = array_reduce($field['post_type'], function ($a, $c) {
             $post_type_object = get_post_type_object($c);
             if (true === $post_type_object->show_in_graphql) {
                 array_push($a, ucfirst($post_type_object->graphql_single_name));
@@ -205,16 +206,11 @@ final class WPGraphQL_MetaBox_Util
             case 'taxonomy_advanced':
                 return function ($node, $args, $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
-                    if (!isset($field) || empty($field)) {
-                        return [];
-                    }
-                    return array_reduce($field, function ($tags, $current) use ($context) {
-                        $taxonomy = DataSource::resolve_term_object($current->term_id, $context);
-                        if ($taxonomy) {
-                            array_push($tags, $taxonomy);
-                        }
-                        return $tags;
-                    }, []);
+                    $resolve_field = function ($field_data) use ($context) {
+                        $taxonomy = DataSource::resolve_term_object($field_data->term_id, $context);
+                        return isset($taxonomy) ? $taxonomy : null;
+                    };
+                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             default:
                 return function () {
