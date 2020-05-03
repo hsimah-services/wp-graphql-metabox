@@ -39,7 +39,6 @@ final class WPGraphQL_MetaBox_Util
             case 'plupload_image':
             case 'slider':
             case 'video':
-            case 'wysiwyg':
                 error_log(__("Unsupported Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
                 return;
             case 'taxonomy':
@@ -68,6 +67,7 @@ final class WPGraphQL_MetaBox_Util
             case 'select':
             case 'text':
             case 'url':
+            case 'wysiwyg':
                 return $multiple ?  ['list_of' => 'String'] : 'String';
             case 'fieldset_text':
             case 'text_list':
@@ -164,6 +164,7 @@ final class WPGraphQL_MetaBox_Util
             case 'key_value':
             case 'select_advanced':
             case 'url':
+            case 'wysiwyg':
                 return function ($node) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) {
