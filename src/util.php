@@ -43,7 +43,13 @@ final class WPGraphQL_MetaBox_Util
                 return;
             case 'taxonomy':
             case 'taxonomy_advanced':
-                $taxonomy = get_taxonomy($field['taxonomy'][0]);
+                $name = $field['taxonomy'][0];
+                $taxonomy = get_taxonomy($name);
+
+                if (empty($taxonomy) || $taxonomy->show_in_graphql === false) {
+                    error_log("wp-graphql-metabox: $name is not in the schema.");
+                    return null;
+                }
 
                 return $multiple ? ['list_of' => $taxonomy->graphql_single_name] : $taxonomy->graphql_single_name;
             case 'switch':
