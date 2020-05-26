@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: WPGraphQL Meta Box Integration
- * Plugin URI: https://github.com/hsimah/wp-graphql-metabox
+ * Plugin URI: https://github.com/hsimah-services/wp-graphql-metabox
  * Description: WP GraphQL provider for Meta Box
  * Author: hsimah
  * Author URI: http://www.hsimah.com
