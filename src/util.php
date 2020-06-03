@@ -72,6 +72,7 @@ final class WPGraphQL_MetaBox_Util
             case 'time':
             case 'select':
             case 'email':
+            case 'tel':
             case 'text':
             case 'url':
             case 'wysiwyg':
@@ -166,6 +167,7 @@ final class WPGraphQL_MetaBox_Util
             case 'time':
             case 'select':
             case 'email':
+            case 'tel':
             case 'text':
             case 'fieldset_text':
             case 'text_list':
