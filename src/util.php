@@ -20,6 +20,7 @@ final class WPGraphQL_MetaBox_Util
         }
         $type = $field['type'];
         $multiple = $field['multiple'];
+        $clone = $field['clone'];
 
         switch ($type) {
             case 'autocomplete':
@@ -78,15 +79,12 @@ final class WPGraphQL_MetaBox_Util
             case 'wysiwyg':
                 return $multiple ?  ['list_of' => 'String'] : 'String';
             case 'fieldset_text':
-            case 'text_list':
             case 'select_advanced':
-                return [
-                    'list_of' => 'String',
-                ];
+                return ['list_of' => 'String'];
+            case 'text_list':
+                return $clone ? ['list_of' => ['list_of' => 'String']] : ['list_of' => 'String'];
             case 'key_value':
-                return [
-                    'list_of' => 'MBKeyValue',
-                ];
+                return ['list_of' => 'MBKeyValue'];
             case 'number':
             case 'range':
                 return $multiple ?  ['list_of' => 'Float'] : 'Float';
