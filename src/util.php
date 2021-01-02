@@ -18,94 +18,10 @@ final class WPGraphQL_MetaBox_Util
         if (!is_array($field)) {
             return null;
         }
-        $type = $field['type'];
-        $multiple = $field['multiple'];
-        $clone = $field['clone'];
 
-        switch ($type) {
-            case 'autocomplete':
-            case 'button':
-            case 'button_group':
-            case 'divider':
-            case 'file':
-            case 'file_advanced':
-            case 'file_input':
-            case 'file_upload':
-            case 'hidden':
-            case 'image':
-            case 'image_advanced':
-            case 'image_select':
-            case 'image_upload':
-            case 'map':
-            case 'plupload_image':
-            case 'slider':
-            case 'video':
-                error_log(__("Unsupported Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
-                return;
-            case 'taxonomy':
-            case 'taxonomy_advanced':
-                $name = $field['taxonomy'][0];
-                $taxonomy = get_taxonomy($name);
-
-                if (empty($taxonomy) || $taxonomy->show_in_graphql === false) {
-                    error_log("wp-graphql-metabox: $name is not in the schema.");
-                    return null;
-                }
-
-                return $multiple ? ['list_of' => $taxonomy->graphql_single_name] : $taxonomy->graphql_single_name;
-            case 'switch':
-            case 'checkbox':
-                return $multiple ?  ['list_of' => 'Boolean'] : 'Boolean';
-            case 'checkbox_list':
-                return [
-                    'list_of' => 'Boolean',
-                ];
-            case 'background':
-            case 'color':
-            case 'custom_html':
-            case 'date':
-            case 'heading':
-            case 'datetime':
-            case 'oembed':
-            case 'password':
-            case 'radio':
-            case 'textarea':
-            case 'time':
-            case 'select':
-            case 'email':
-            case 'tel':
-            case 'text':
-            case 'url':
-            case 'wysiwyg':
-                return $multiple ?  ['list_of' => 'String'] : 'String';
-            case 'fieldset_text':
-            case 'select_advanced':
-                return ['list_of' => 'String'];
-            case 'text_list':
-                return $clone ? ['list_of' => ['list_of' => 'String']] : ['list_of' => 'String'];
-            case 'key_value':
-                return ['list_of' => 'MBKeyValue'];
-            case 'number':
-            case 'range':
-                return $multiple ?  ['list_of' => 'Float'] : 'Float';
-            case 'single_image':
-                return 'MBSingleImage';
-            case 'user':
-                return $multiple ? ['list_of' => 'User'] : 'User';
-            case 'post':
-                $post_type = true === is_array($field['post_type']) ? $field['post_type'][0] : $field['post_type'];
-                $post_type_object = get_post_type_object($post_type);
-
-                if (!$post_type_object || !$post_type_object->show_in_graphql) {
-                    error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $post_type", 'wpgraphql-metabox'));
-                    return;
-                }
-
-                $graphql_type =  $post_type_object->graphql_single_name;
-                return $multiple ? ['list_of' => $graphql_type] : $graphql_type;
-            default:
-                error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
-        }
+        ['multiple' => $multiple, 'clone' => $clone] = $field;
+        $resolved_type = self::get_base_graphql_type($field);
+        return $multiple || $clone ? ['list_of' => $resolved_type] : $resolved_type;
     }
 
     /**
@@ -267,5 +183,99 @@ final class WPGraphQL_MetaBox_Util
             return rwmb_meta($field_id, $args, $node->userId);
         }
         return rwmb_meta($field_id, $args, $node->ID);
+    }
+
+    /**
+     * Resolves metabox field data by entity type
+     *
+     * @var array       The metabox field configuration
+     * @return mixed    The field contents
+     * @since  0.3.0
+     * @access private
+     */
+    private static function get_base_graphql_type($field)
+    {
+        ['type' => $type] = $field;
+        switch ($type) {
+            case 'autocomplete':
+            case 'button':
+            case 'button_group':
+            case 'divider':
+            case 'file':
+            case 'file_advanced':
+            case 'file_input':
+            case 'file_upload':
+            case 'hidden':
+            case 'image':
+            case 'image_advanced':
+            case 'image_select':
+            case 'image_upload':
+            case 'map':
+            case 'plupload_image':
+            case 'slider':
+            case 'video':
+                error_log(__("Unsupported Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
+                return;
+            case 'taxonomy':
+            case 'taxonomy_advanced':
+                $name = $field['taxonomy'][0];
+                $taxonomy = get_taxonomy($name);
+
+                if (empty($taxonomy) || $taxonomy->show_in_graphql === false) {
+                    error_log("wp-graphql-metabox: $name is not in the schema.");
+                    return null;
+                }
+
+                return $taxonomy->graphql_single_name;
+            case 'switch':
+            case 'checkbox':
+                return 'Boolean';
+            case 'checkbox_list':
+                return ['list_of' => 'Boolean'];
+            case 'background':
+            case 'color':
+            case 'custom_html':
+            case 'date':
+            case 'heading':
+            case 'datetime':
+            case 'oembed':
+            case 'password':
+            case 'radio':
+            case 'textarea':
+            case 'time':
+            case 'select':
+            case 'email':
+            case 'tel':
+            case 'text':
+            case 'url':
+            case 'wysiwyg':
+                return 'String';
+            case 'fieldset_text':
+            case 'select_advanced':
+                return ['list_of' => 'String'];
+            case 'text_list':
+                return ['list_of' => 'String'];
+            case 'key_value':
+                return ['list_of' => 'MBKeyValue'];
+            case 'number':
+            case 'range':
+                return 'Float';
+            case 'single_image':
+                return 'MBSingleImage';
+            case 'user':
+                return 'User';
+            case 'post':
+                $post_type = true === is_array($field['post_type']) ? $field['post_type'][0] : $field['post_type'];
+                $post_type_object = get_post_type_object($post_type);
+
+                if (!$post_type_object || !$post_type_object->show_in_graphql) {
+                    error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $post_type", 'wpgraphql-metabox'));
+                    return;
+                }
+
+                return $post_type_object->graphql_single_name;
+            default:
+                error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
+        }
     }
 }
