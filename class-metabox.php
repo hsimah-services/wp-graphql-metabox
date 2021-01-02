@@ -103,7 +103,7 @@ final class WPGraphQL_MetaBox
                 return;
             }
 
-            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field['type'], $field['id']);
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field);
             $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type);
 
             register_graphql_fields($post_type_object->graphql_single_name, [
@@ -138,7 +138,7 @@ final class WPGraphQL_MetaBox
                 return;
             }
 
-            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field['type'], $field['id'], ['object_type' => 'user']);
+            $graphql_resolver = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field, ['object_type' => 'user']);
             $graphql_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type);
 
             register_graphql_field(

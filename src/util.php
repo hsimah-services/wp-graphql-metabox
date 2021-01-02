@@ -22,7 +22,13 @@ final class WPGraphQL_MetaBox_Util
 
         ['multiple' => $multiple, 'clone' => $clone] = $field;
         $resolved_type = self::get_base_graphql_type($field);
-        return $multiple || $clone ? ['list_of' => $resolved_type] : $resolved_type;
+        if ($multiple) {
+            $resolved_type = ['list_of' => $resolved_type];
+        }
+        if ($clone) {
+            $resolved_type = ['list_of' => $resolved_type];
+        }
+        return $resolved_type;
     }
 
     /**
@@ -54,8 +60,18 @@ final class WPGraphQL_MetaBox_Util
         return $field['multiple'] ? ['list_of' => $union_name] : $union_name;
     }
 
-    public static function resolve_graphql_resolver($type, $field_id, $meta_args = null)
+    /**
+     * Resolves metabox fields
+     *
+     * @var mixed       The metabox field configuration
+     * @var array       The metabox field arguments
+     * @return mixed    The payload response
+     * @since  0.3.0
+     * @access public
+     */
+    public static function resolve_graphql_resolver($field, $meta_args = null)
     {
+        ['type' => $type, 'id' => $field_id] = $field;
         switch ($type) {
             case 'number':
             case 'range':
@@ -64,7 +80,7 @@ final class WPGraphQL_MetaBox_Util
                     $resolve_field = function ($field_data) {
                         return is_numeric($field_data) ? $field_data : null;
                     };
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             case 'switch':
             case 'checkbox':
@@ -95,7 +111,7 @@ final class WPGraphQL_MetaBox_Util
                     $resolve_field = function ($field_data) {
                         return isset($field_data) ? $field_data : null;
                     };
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             case 'single_image':
                 return function ($node, $args) use ($field_id, $meta_args) {
@@ -106,7 +122,7 @@ final class WPGraphQL_MetaBox_Util
                         return isset($field_data) ? $field_data : null;
                     };
 
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             case 'user':
                 return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
@@ -116,7 +132,7 @@ final class WPGraphQL_MetaBox_Util
                         return isset($user) ? $user : null;
                     };
 
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             case 'post':
                 return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
@@ -126,7 +142,7 @@ final class WPGraphQL_MetaBox_Util
                         return isset($post) ? $post : null;
                     };
 
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             case 'taxonomy':
             case 'taxonomy_advanced':
@@ -136,7 +152,7 @@ final class WPGraphQL_MetaBox_Util
                         $taxonomy = $context->get_loader('term')->load_deferred($field_data);
                         return isset($taxonomy) ? $taxonomy : null;
                     };
-                    return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
+                    return self::resolve_field($field, $resolve_field);
                 };
             default:
                 return function () {
@@ -278,5 +294,32 @@ final class WPGraphQL_MetaBox_Util
             default:
                 error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
         }
+    }
+
+    /**
+     * Resolves metabox single, cloned and multiple fields
+     *
+     * @var array       The metabox field configuration
+     * @var function    The field type resolver
+     * @return mixed    The resolved data
+     * @since  0.3.0
+     * @access private
+     */
+
+    private static function resolve_field($field_config, $field_resolver) {
+        // cloned or multiple field
+        if (is_array($field_config)) {
+            return array_map(function ($field_data) use ($field_resolver) {
+                // cloned and multiple field
+                if (is_array($field_data)) {
+                    return array_map($field_resolver, $field_data);
+                }
+                // cloned xor multiple field
+                return $field_resolver($field_data);
+            }, $field_config);
+        }
+
+        // non-cloned or multiple field
+        return $field_resolver($field_config);
     }
 }
