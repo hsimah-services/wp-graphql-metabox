@@ -1,5 +1,6 @@
 <?php
 
+use WPGraphQL\AppContext;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\Model\User;
 
@@ -108,31 +109,31 @@ final class WPGraphQL_MetaBox_Util
                     return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'user':
-                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
-                        $user = DataSource::resolve_user($field_data, $context);
+                        $user = $context->get_loader('user')->load_deferred($field_data);
                         return isset($user) ? $user : null;
                     };
 
                     return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'post':
-                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
-                        $node = DataSource::resolve_post_object($field_data, $context);
-                        return isset($node) ? $node : null;
+                        $post = $context->get_loader('post')->load_deferred($field_data);
+                        return isset($post) ? $post : null;
                     };
 
                     return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
                 };
             case 'taxonomy':
             case 'taxonomy_advanced':
-                return function ($node, $args, $context) use ($field_id, $meta_args) {
+                return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
-                        $taxonomy = DataSource::resolve_term_object($field_data->term_id, $context);
+                        $taxonomy = $context->get_loader('term')->load_deferred($field_data);
                         return isset($taxonomy) ? $taxonomy : null;
                     };
                     return is_array($field) ? array_map($resolve_field, $field) : $resolve_field($field);
