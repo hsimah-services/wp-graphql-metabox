@@ -6,14 +6,14 @@
  * Description: WP GraphQL provider for Meta Box
  * Author: hsimah
  * Author URI: http://www.hsimah.com
- * Version: 0.2.2
+ * Version: 0.3.0
  * Text Domain: wpgraphql-metabox
  * License: GPL-3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  *
  * @package  WPGraphQL_MetaBox
  * @author   hsimah
- * @version  0.2.2
+ * @version  0.3.0
  */
 
 // Exit if accessed directly.
@@ -25,7 +25,7 @@ if (!class_exists('WPGraphQL_MetaBox')) {
 
 	add_action('admin_init', function () {
 		$versions = [
-			'wp-graphql' => '0.8.1',
+			'wp-graphql' => '1.0.4',
 			'metabox' => '5.2.10'
 		];
 
