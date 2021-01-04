@@ -370,6 +370,9 @@ final class WPGraphQL_MetaBox_Util
                 register_graphql_object_type($graphql_name, [
                     'description'   => __("$graphql_name Group", 'wpgraphql-metabox'),
                     'fields'        => array_reduce($fields, function ($fields, $field) {
+                        if (!key_exists('graphql_name', $field)) {
+                            return $fields;
+                        }
                         [
                             'graphql_name' => $graphql_name,
                             'name' => $name,
@@ -391,7 +394,7 @@ final class WPGraphQL_MetaBox_Util
                             'type' => 'ID',
                             'description' => __('Generated ID', 'wpgraphql-metabox'),
                             'resolve' => function ($node) use ($graphql_name) {
-                                return Relay::toGlobalId($graphql_name, json_encode($node));
+                                return Relay::toGlobalId($graphql_name, hash('md5', json_encode($node)));
                             }
                         ]
                     ]),
