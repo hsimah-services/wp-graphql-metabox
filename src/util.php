@@ -41,7 +41,14 @@ final class WPGraphQL_MetaBox_Util
      */
     public static function resolve_graphql_union_type($field)
     {
-        $union_names = array_reduce($field['post_type'], function ($a, $c) {
+        [
+            'multiple' => $multiple,
+            'clone' => $clone,
+            'post_type' => $post_type,
+            'graphql_name' => $graphql_name,
+        ] = $field;
+        
+        $union_names = array_reduce($post_type, function ($a, $c) {
             $post_type_object = get_post_type_object($c);
             if (true === $post_type_object->show_in_graphql) {
                 array_push($a, ucfirst($post_type_object->graphql_single_name));
@@ -49,7 +56,7 @@ final class WPGraphQL_MetaBox_Util
             return $a;
         }, []);
 
-        $union_name = ucfirst($field['graphql_name']) . 'To' . join('And', $union_names) . 'Union';
+        $union_name = ucfirst($graphql_name) . 'To' . join('And', $union_names) . 'Union';
         register_graphql_union_type($union_name, [
             'typeNames'       => $union_names,
             'resolveType' => function ($union) {
@@ -57,7 +64,14 @@ final class WPGraphQL_MetaBox_Util
             }
         ]);
 
-        return $field['multiple'] ? ['list_of' => $union_name] : $union_name;
+
+        if ($multiple) {
+            $union_name = ['list_of' => $union_name];
+        }
+        if ($clone) {
+            $union_name = ['list_of' => $union_name];
+        }
+        return $union_name;
     }
 
     /**
@@ -306,7 +320,8 @@ final class WPGraphQL_MetaBox_Util
      * @access private
      */
 
-    private static function resolve_field($field_config, $field_resolver) {
+    private static function resolve_field($field_config, $field_resolver)
+    {
         // cloned or multiple field
         if (is_array($field_config)) {
             return array_map(function ($field_data) use ($field_resolver) {
