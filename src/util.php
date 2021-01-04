@@ -200,27 +200,49 @@ final class WPGraphQL_MetaBox_Util
         }
     }
 
-    private static function resolve_string()
+    /**
+     * Resolves nullable fields
+     *
+     * @return function A resolver function
+     * @since  0.4.0
+     * @access private
+     */
+    private static function resolve_nullable_field()
     {
         return function ($field_data) {
             return isset($field_data) ? $field_data : null;
         };
     }
 
-    private static function resolve_numeric()
+    /**
+     * Resolves nullable numric fields
+     *
+     * @return function The field type resolver
+     * @since  0.4.0
+     * @access private
+     */
+    private static function resolve_numeric_field()
     {
         return function ($field_data) {
             return is_numeric($field_data) ? $field_data : null;
         };
     }
 
-    private  static function get_resolver($type)
+    /**
+     * Gets the appropriate field resolver based on field type
+     *
+     * @var string      The Metabox field type
+     * @return function The field resolver
+     * @since  0.4.0
+     * @access private
+     */
+    private static function get_resolver($type)
     {
         switch ($type) {
             case 'group':
             case 'number':
             case 'range':
-                return self::resolve_numeric();
+                return self::resolve_numeric_field();
             case 'switch':
             case 'checkbox':
             case 'checkbox_list':
@@ -246,7 +268,7 @@ final class WPGraphQL_MetaBox_Util
             case 'url':
             case 'wysiwyg':
             case 'single_image':
-                return self::resolve_string();
+                return self::resolve_nullable_field();
             default:
                 return function () {
                     return null;
@@ -415,7 +437,6 @@ final class WPGraphQL_MetaBox_Util
      * @since  0.3.0
      * @access private
      */
-
     private static function resolve_field($field_config, $field_resolver)
     {
         // cloned or multiple field

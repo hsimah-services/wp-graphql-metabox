@@ -8,8 +8,8 @@ The WPGraphQL documentation can be found [here](https://docs.wpgraphql.com).
 
 - Requires PHP 7.3+
 - Requires WordPress 5.4+
-- Requires WPGraphQL 0.8.1+
-- Requires Meta Box 5.2.10+
+- Requires WPGraphQL 1.0.4+
+- Requires Meta Box 5.3.3+
   - Requires MB User Meta extension for User fields
 
 ## Overview
@@ -66,7 +66,7 @@ query {
 ```
 
 ## Limitations
-Currently the plugin only supports custom fields on `post` types (ie no User or Settings Pages).
+Currently the plugin only supports custom fields on `post` and `user` types (ie no Settings Pages).
 
 Currently the plugin only supports using the following Meta Box types:
 - `switch`
