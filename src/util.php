@@ -1,5 +1,6 @@
 <?php
 
+use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\Model\User;
@@ -90,14 +91,18 @@ final class WPGraphQL_MetaBox_Util
             'id' => $field_id,
         ] = $field;
         switch ($type) {
+            case 'group':
+                return function ($node) use ($field_id, $meta_args) {
+                    $group_data = self::get_field($node, $field_id, $meta_args);
+                    return self::resolve_field($group_data, function ($field_data) {
+                        return $field_data;
+                    });
+                };
             case 'number':
             case 'range':
-                return function ($node) use ($field_id, $meta_args) {
+                return function ($node) use ($field_id, $meta_args, $type) {
                     $field = self::get_field($node, $field_id, $meta_args);
-                    $resolve_field = function ($field_data) {
-                        return is_numeric($field_data) ? $field_data : null;
-                    };
-                    return self::resolve_field($field, $resolve_field);
+                    return self::resolve_field($field, self::get_resolver($type));
                 };
             case 'switch':
             case 'checkbox':
@@ -123,23 +128,17 @@ final class WPGraphQL_MetaBox_Util
             case 'select_advanced':
             case 'url':
             case 'wysiwyg':
-                return function ($node) use ($field_id, $meta_args) {
+                return function ($node) use ($field_id, $meta_args, $type) {
                     $field = self::get_field($node, $field_id, $meta_args);
-                    $resolve_field = function ($field_data) {
-                        return isset($field_data) ? $field_data : null;
-                    };
-                    return self::resolve_field($field, $resolve_field);
+                    return self::resolve_field($field, self::get_resolver($type));
                 };
             case 'single_image':
-                return function ($node, $args) use ($field_id, $meta_args) {
+                return function ($node, $args) use ($field_id, $meta_args, $type) {
                     $size = !isset($args['size']) ? 'thumbnail' : $args['size'];
                     $merged_args = array_merge($meta_args, ['size' => $size]);
                     $field = rwmb_meta($field_id, $merged_args, $node->ID);
-                    $resolve_field = function ($field_data) {
-                        return isset($field_data) ? $field_data : null;
-                    };
 
-                    return self::resolve_field($field, $resolve_field);
+                    return self::resolve_field($field, self::get_resolver($type));
                 };
             case 'user':
                 return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
@@ -198,6 +197,60 @@ final class WPGraphQL_MetaBox_Util
                 ];
             default:
                 return null;
+        }
+    }
+
+    private static function resolve_string()
+    {
+        return function ($field_data) {
+            return isset($field_data) ? $field_data : null;
+        };
+    }
+
+    private static function resolve_numeric()
+    {
+        return function ($field_data) {
+            return is_numeric($field_data) ? $field_data : null;
+        };
+    }
+
+    private  static function get_resolver($type)
+    {
+        switch ($type) {
+            case 'group':
+            case 'number':
+            case 'range':
+                return self::resolve_numeric();
+            case 'switch':
+            case 'checkbox':
+            case 'checkbox_list':
+            case 'background':
+            case 'color':
+            case 'custom_html':
+            case 'date':
+            case 'heading':
+            case 'datetime':
+            case 'oembed':
+            case 'password':
+            case 'radio':
+            case 'textarea':
+            case 'time':
+            case 'select':
+            case 'email':
+            case 'tel':
+            case 'text':
+            case 'fieldset_text':
+            case 'text_list':
+            case 'key_value':
+            case 'select_advanced':
+            case 'url':
+            case 'wysiwyg':
+            case 'single_image':
+                return self::resolve_string();
+            default:
+                return function () {
+                    return null;
+                };
         }
     }
 
@@ -314,24 +367,34 @@ final class WPGraphQL_MetaBox_Util
                     'graphql_name' => $graphql_name,
                     'fields' => $fields,
                 ] = $field;
-                $fields = array_reduce($fields, function ($fields, $field) {
-                    [
-                        'graphql_name' => $graphql_name,
-                        'name' => $name,
-                    ] = $field;
-                    $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
-                    $fields[$graphql_name]  = [
-                        'type'          => $graphql_type,
-                        'description'   => $name,
-                        'resolve'       => WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field),
-                        'args'          => WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type),
-                    ];
-
-                    return $fields;
-                });
                 register_graphql_object_type($graphql_name, [
                     'description'   => __("$graphql_name Group", 'wpgraphql-metabox'),
-                    'fields'        => $fields,
+                    'fields'        => array_reduce($fields, function ($fields, $field) {
+                        [
+                            'graphql_name' => $graphql_name,
+                            'name' => $name,
+                            'id' => $id
+                        ] = $field;
+                        $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
+                        $fields[$graphql_name]  = [
+                            'type' => $graphql_type,
+                            'description' => $name,
+                            'resolve' => function ($node) use ($id) {
+                                return $node[$id];
+                            },
+                            'args' => WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type),
+                        ];
+
+                        return $fields;
+                    }, [
+                        'id' => [
+                            'type' => 'ID',
+                            'description' => __('Generated ID', 'wpgraphql-metabox'),
+                            'resolve' => function ($node) use ($graphql_name) {
+                                return Relay::toGlobalId($graphql_name, json_encode($node));
+                            }
+                        ]
+                    ]),
                 ]);
 
                 return $graphql_name;
