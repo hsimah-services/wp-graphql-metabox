@@ -47,7 +47,7 @@ final class WPGraphQL_MetaBox_Util
             'post_type' => $post_type,
             'graphql_name' => $graphql_name,
         ] = $field;
-        
+
         $union_names = array_reduce($post_type, function ($a, $c) {
             $post_type_object = get_post_type_object($c);
             if (true === $post_type_object->show_in_graphql) {
@@ -85,7 +85,10 @@ final class WPGraphQL_MetaBox_Util
      */
     public static function resolve_graphql_resolver($field, $meta_args = null)
     {
-        ['type' => $type, 'id' => $field_id] = $field;
+        [
+            'type' => $type,
+            'id' => $field_id,
+        ] = $field;
         switch ($type) {
             case 'number':
             case 'range':
@@ -227,6 +230,7 @@ final class WPGraphQL_MetaBox_Util
     private static function get_base_graphql_type($field)
     {
         ['type' => $type] = $field;
+
         switch ($type) {
             case 'autocomplete':
             case 'button':
@@ -305,6 +309,32 @@ final class WPGraphQL_MetaBox_Util
                 }
 
                 return $post_type_object->graphql_single_name;
+            case 'group':
+                [
+                    'graphql_name' => $graphql_name,
+                    'fields' => $fields,
+                ] = $field;
+                $fields = array_reduce($fields, function ($fields, $field) {
+                    [
+                        'graphql_name' => $graphql_name,
+                        'name' => $name,
+                    ] = $field;
+                    $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
+                    $fields[$graphql_name]  = [
+                        'type'          => $graphql_type,
+                        'description'   => $name,
+                        'resolve'       => WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field),
+                        'args'          => WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type),
+                    ];
+
+                    return $fields;
+                });
+                register_graphql_object_type($graphql_name, [
+                    'description'   => __("$graphql_name Group", 'wpgraphql-metabox'),
+                    'fields'        => $fields,
+                ]);
+
+                return $graphql_name;
             default:
                 error_log(__("Unknown Meta Box type supplied to wpgraphql-metabox: $type", 'wpgraphql-metabox'));
         }
