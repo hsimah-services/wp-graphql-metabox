@@ -6,14 +6,14 @@
  * Description: WP GraphQL provider for Meta Box
  * Author: hsimah
  * Author URI: http://www.hsimah.com
- * Version: 0.3.1
+ * Version: 0.4.0
  * Text Domain: wpgraphql-metabox
  * License: GPL-3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  *
  * @package  WPGraphQL_MetaBox
  * @author   hsimah
- * @version  0.3.1
+ * @version  0.4.0
  */
 
 // Exit if accessed directly.
