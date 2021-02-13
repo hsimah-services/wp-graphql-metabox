@@ -215,7 +215,7 @@ final class WPGraphQL_MetaBox_Util
     }
 
     /**
-     * Resolves nullable numric fields
+     * Resolves nullable numeric fields
      *
      * @return function The field type resolver
      * @since  0.4.0
@@ -453,5 +453,45 @@ final class WPGraphQL_MetaBox_Util
 
         // non-cloned or multiple field
         return $field_resolver($field_config);
+    }
+
+    /**
+     * Registers the field as a mutation input if `graphql_mutate` is set to true in the field
+     * configuration.
+     * 
+     * Untested with non-scalar fields
+     *
+     * @var string  $graphql_singular_name  The GraphQL singular name to mutate
+     * @var array   $graphql_field_type     The GraphQL field type    
+     * @var array   $field_config           The metabox field configuration
+     * @since  0.5.0
+     * @access public
+     */
+    public static function register_mutation_input($graphql_singular_name, $graphql_field_type, $field_config)
+    {
+        if (
+            !key_exists('graphql_mutate', $field_config) ||
+            $field_config['graphql_mutate'] !== true
+        ) {
+            // users have not asked to register this field as a mutation input
+            return;
+        }
+        add_filter('graphql_input_fields', function ($fields, $type_name) use ($graphql_singular_name, $graphql_field_type, $field_config) {
+            if ($type_name === "Create{$graphql_singular_name}Input" || $type_name === "Update{$graphql_singular_name}Input") {
+                // add field as input untested with non-scalar fields
+                ['name' => $name, 'graphql_name' => $graphql_name] = $field_config;
+                $fields[$graphql_name] = [
+                    'type'          => $graphql_field_type,
+                    'description'   => $name,
+                ];
+            }
+            return $fields;
+        }, 10, 2);
+
+        add_action('graphql_post_object_mutation_update_additional_data', function (int $post_id, array $input) use ($field_config) {
+            // update the meta value
+            ['id' => $id, 'graphql_name' => $graphql_name] = $field_config;
+            rwmb_set_meta($post_id, $id, $input[$graphql_name]);
+        }, 10, 3);
     }
 }
