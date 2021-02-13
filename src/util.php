@@ -215,7 +215,7 @@ final class WPGraphQL_MetaBox_Util
     }
 
     /**
-     * Resolves nullable numric fields
+     * Resolves nullable numeric fields
      *
      * @return function The field type resolver
      * @since  0.4.0
