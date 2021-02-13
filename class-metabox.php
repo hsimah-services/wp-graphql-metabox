@@ -74,9 +74,11 @@ final class WPGraphQL_MetaBox
     {
         switch ($object_type) {
             case 'post':
-                return self::register_post_field($field, $type);
+                self::register_post_field($field, $type);
+                break;
             case 'user':
-                return self::register_user_field($field, $type, $object_type);
+                self::register_user_field($field, $type, $object_type);
+                break;
         }
     }
 
@@ -114,6 +116,8 @@ final class WPGraphQL_MetaBox
                     'args'          => $graphql_args,
                 ]
             ]);
+            
+            WPGraphQL_MetaBox_Util::register_mutation_input($post_type_object->graphql_single_name, $graphql_type, $field);
         }
     }
 
