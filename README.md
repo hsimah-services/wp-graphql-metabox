@@ -8,8 +8,8 @@ The WPGraphQL documentation can be found [here](https://docs.wpgraphql.com).
 
 - Requires PHP 7.3+
 - Requires WordPress 5.4+
-- Requires WPGraphQL 1.0.4+
-- Requires Meta Box 5.3.3+
+- Requires WPGraphQL 1.1.3+
+- Requires Meta Box 5.3.8+
   - Requires MB User Meta extension for User fields
 
 ## Overview
@@ -21,6 +21,12 @@ By simply adding an extra `graphql_name` property to the field registration the 
 **This assume you know how to expose custom post types in WPGraphQL - read their documentation for further info.**
 
 Using Meta Box, define a custom field. Copy and paste the generated code to your `functions.php` (or where ever you store your custom code).
+
+### wp-graphql-metabox options
+|option|type|effect|
+|--|--|--|
+|`graphql_name`|`string`|adds the field to the GraphQL object(s) identified in `post_types`|
+|`graphql_mutate`|`boolean`|adds the field to the GraphQL object(s) create and update mutation input|
 
 Add in the `graphql_name` to the field definition:
 
@@ -43,6 +49,7 @@ $meta_boxes[] = [
             'columns' => 2,
             'size' => 3,
             'graphql_name' => 'randomNumber',
+            'graphql_mutate' => true
         ],
     ],
 ];
@@ -69,6 +76,8 @@ query {
 Currently the plugin only supports custom fields on `post` and `user` types (ie no Settings Pages).
 
 Currently the plugin only supports using the following Meta Box types:
+- `taxonomy`
+- `taxonomy_advanced`
 - `switch`
 - `checkbox`
 - `checkbox_list`
@@ -84,12 +93,19 @@ Currently the plugin only supports using the following Meta Box types:
 - `textarea`
 - `time`
 - `select`
+- `email`
+- `tel`
 - `text`
+- `url`
+- `wysiwyg`
 - `fieldset_text`
-- `number`
-- `range`
+- `select_advanced`
 - `text_list`
 - `key_value`
-- `select_advanced`
-- `url`
+- `number`
+- `range`
 - `single_image`
+- `user`
+- `post`
+- `group`
+If you require a field which is not supported please feel free to submit an issue (or better yet, a PR!)

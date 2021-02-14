@@ -65,7 +65,6 @@ final class WPGraphQL_MetaBox_Util
             }
         ]);
 
-
         if ($multiple) {
             $union_name = ['list_of' => $union_name];
         }

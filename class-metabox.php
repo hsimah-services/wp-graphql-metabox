@@ -82,6 +82,38 @@ final class WPGraphQL_MetaBox
         }
     }
 
+    /**
+     * Registers the GraphQL settings options to Meta Box
+     */
+    public static function add_field_settings($advanced_fields, $label_prefix, $args_prefix)
+    {
+        return array_merge($advanced_fields, [
+            [
+                'name' => __('WPGraphQL Integration', 'wpgraphql-metabox'),
+                'type' => 'heading',
+            ],
+            [
+                'name' => __('Show in GraphQL?', 'wpgraphql-metabox'),
+                'id'   => $args_prefix . 'show_in_graphql',
+                'type' => 'checkbox',
+                'std'  => 0,
+                'desc' => __('Add this type to the GraphQL schema.', 'wpgraphql-metabox'),
+            ],
+            [
+                'name'  => __('GraphQL single name', 'wpgraphql-metabox'),
+                'id'    => $args_prefix . 'graphql_single_name',
+                'type'  => 'text',
+                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
+            ],
+            [
+                'name'  => __('GraphQL plural name', 'wpgraphql-metabox'),
+                'id'    => $args_prefix . 'graphql_plural_name',
+                'type'  => 'text',
+                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
+            ],
+        ]);
+    }
+
     private static function register_post_field($field, $type)
     {
         $post_type_object = get_post_type_object($type);
@@ -156,35 +188,6 @@ final class WPGraphQL_MetaBox
                 ]
             );
         }
-    }
-
-    public static function add_field_settings($advanced_fields, $label_prefix, $args_prefix)
-    {
-        return array_merge($advanced_fields, [
-            [
-                'name' => __('WPGraphQL Integration', 'wpgraphql-metabox'),
-                'type' => 'heading',
-            ],
-            [
-                'name' => __('Show in GraphQL?', 'wpgraphql-metabox'),
-                'id'   => $args_prefix . 'show_in_graphql',
-                'type' => 'checkbox',
-                'std'  => 0,
-                'desc' => __('Add this type to the GraphQL schema.', 'wpgraphql-metabox'),
-            ],
-            [
-                'name'  => __('GraphQL single name', 'wpgraphql-metabox'),
-                'id'    => $args_prefix . 'graphql_single_name',
-                'type'  => 'text',
-                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
-            ],
-            [
-                'name'  => __('GraphQL plural name', 'wpgraphql-metabox'),
-                'id'    => $args_prefix . 'graphql_plural_name',
-                'type'  => 'text',
-                'desc'  => __('Required if Show in GraphQL checked', 'wpgraphql-metabox'),
-            ],
-        ]);
     }
 
     /**
