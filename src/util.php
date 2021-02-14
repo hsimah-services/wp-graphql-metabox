@@ -164,7 +164,7 @@ final class WPGraphQL_MetaBox_Util
                 return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
                     $field = self::get_field($node, $field_id, $meta_args);
                     $resolve_field = function ($field_data) use ($context) {
-                        $taxonomy = $context->get_loader('term')->load_deferred($field_data);
+                        $taxonomy = $context->get_loader('term')->load_deferred($field_data->term_id);
                         return isset($taxonomy) ? $taxonomy : null;
                     };
                     return self::resolve_field($field, $resolve_field);
