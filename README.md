@@ -108,4 +108,5 @@ Currently the plugin only supports using the following Meta Box types:
 - `user`
 - `post`
 - `group`
+
 If you require a field which is not supported please feel free to submit an issue (or better yet, a PR!)

@@ -19,30 +19,6 @@ final class WPGraphQL_MetaBox_Util
 {
 
   /**
-   * Resolve Meta Box type to GraphQL type
-   *
-   * @since  0.0.1
-   * @access public
-   * @return string
-   */
-  public static function resolve_graphql_type($field)
-  {
-    if (!is_array($field)) {
-      return null;
-    }
-
-    ['multiple' => $multiple, 'clone' => $clone] = $field;
-    $resolved_type = self::get_field_graphql_type_name($field);
-    if ($multiple) {
-      $resolved_type = ['list_of' => $resolved_type];
-    }
-    if ($clone) {
-      $resolved_type = ['list_of' => $resolved_type];
-    }
-    return $resolved_type;
-  }
-
-  /**
    * Resolves metabox union type for post-to-post with multiple type fields
    *
    * @param   mixed         The metabox field configuration
@@ -59,14 +35,16 @@ final class WPGraphQL_MetaBox_Util
       'graphql_name' => $graphql_name,
     ] = $field;
 
+    // get all GraphQL type names for types in the union
     $union_names = array_reduce($post_type, function ($a, $c) {
       $post_type_object = get_post_type_object($c);
-      if (true === $post_type_object->show_in_graphql) {
+      if ($post_type_object->show_in_graphql === true) {
         array_push($a, ucfirst($post_type_object->graphql_single_name));
       }
       return $a;
     }, []);
 
+    // build a unique union GraphQL type
     $union_name = ucfirst($graphql_name) . 'To' . join('And', $union_names) . 'Union';
     register_graphql_union_type($union_name, [
       'typeNames'       => $union_names,
@@ -86,6 +64,9 @@ final class WPGraphQL_MetaBox_Util
 
   /**
    * Returns the appropriate resolver callback for the field
+   * The callback is executed by WPGraphQL to resolve a field as part of a request
+   * All values are retrieved via `rwmb_meta` and passed through a safety function as
+   * GraphQL clients will throw errors for mismatched types.
    *
    * @param   mixed $field      The metabox field configuration
    * @param   array $meta_args  The metabox field arguments
@@ -102,17 +83,11 @@ final class WPGraphQL_MetaBox_Util
 
     switch ($type) {
       case 'group':
-        return function ($node) use ($field_id, $meta_args) {
-          $group_data = self::get_field($node, $field_id, $meta_args);
-          return self::resolve_field($group_data, function ($field_data) {
-            return $field_data;
-          });
-        };
       case 'number':
       case 'range':
         return function ($node) use ($field_id, $meta_args, $type) {
-          $field = self::get_field($node, $field_id, $meta_args);
-          return self::resolve_field($field, self::get_resolver($type));
+          $field = self::get_rwmb_meta_value($node, $field_id, $meta_args);
+          return self::get_resolved_field_value($field, self::get_safe_value_callback($type));
         };
       case 'switch':
       case 'checkbox':
@@ -139,8 +114,8 @@ final class WPGraphQL_MetaBox_Util
       case 'url':
       case 'wysiwyg':
         return function ($node) use ($field_id, $meta_args, $type) {
-          $field = self::get_field($node, $field_id, $meta_args);
-          return self::resolve_field($field, self::get_resolver($type));
+          $field = self::get_rwmb_meta_value($node, $field_id, $meta_args);
+          return self::get_resolved_field_value($field, self::get_safe_value_callback($type));
         };
       case 'single_image':
         return function ($node, $args) use ($field_id, $meta_args, $type) {
@@ -148,37 +123,37 @@ final class WPGraphQL_MetaBox_Util
           $merged_args = array_merge($meta_args, ['size' => $size]);
           $field = rwmb_meta($field_id, $merged_args, $node->ID);
 
-          return self::resolve_field($field, self::get_resolver($type));
+          return self::get_resolved_field_value($field, self::get_safe_value_callback($type));
         };
       case 'user':
         return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
-          $field = self::get_field($node, $field_id, $meta_args);
+          $field = self::get_rwmb_meta_value($node, $field_id, $meta_args);
           $resolve_field = function ($field_data) use ($context) {
             $user = $context->get_loader('user')->load_deferred($field_data);
             return isset($user) ? $user : null;
           };
 
-          return self::resolve_field($field, $resolve_field);
+          return self::get_resolved_field_value($field, $resolve_field);
         };
       case 'post':
         return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
-          $field = self::get_field($node, $field_id, $meta_args);
+          $field = self::get_rwmb_meta_value($node, $field_id, $meta_args);
           $resolve_field = function ($field_data) use ($context) {
             $post = $context->get_loader('post')->load_deferred($field_data);
             return isset($post) ? $post : null;
           };
 
-          return self::resolve_field($field, $resolve_field);
+          return self::get_resolved_field_value($field, $resolve_field);
         };
       case 'taxonomy':
       case 'taxonomy_advanced':
         return function ($node, $args, AppContext $context) use ($field_id, $meta_args) {
-          $field = self::get_field($node, $field_id, $meta_args);
+          $field = self::get_rwmb_meta_value($node, $field_id, $meta_args);
           $resolve_field = function ($field_data) use ($context) {
             $taxonomy = $context->get_loader('term')->load_deferred($field_data->term_id);
             return isset($taxonomy) ? $taxonomy : null;
           };
-          return self::resolve_field($field, $resolve_field);
+          return self::get_resolved_field_value($field, $resolve_field);
         };
       default:
         return function () {
@@ -193,9 +168,9 @@ final class WPGraphQL_MetaBox_Util
    * @param   string      $type The GraphQL type name
    * @return  array|null  The GraphQL arg config
    * @since   0.1.0
-   * @access  public
+   * @access  private
    */
-  public static function resolve_graphql_args($type)
+  private static function get_graphql_field_args($type)
   {
     switch ($type) {
       case 'MBSingleImage':
@@ -211,48 +186,50 @@ final class WPGraphQL_MetaBox_Util
   }
 
   /**
-   * Resolves nullable fields
+   * Gets the correct GraphQL type for a Meta Box field. Handles multiple and cloned field types
    *
-   * @return function A resolver function
-   * @since  0.4.0
-   * @access private
+   * @param   array $field  The Meta Box field config
+   * @since   0.0.1
+   * @access  private
+   * @return  string
    */
-  private static function resolve_nullable_field()
+  public static function get_graphql_type($field)
   {
-    return function ($field_data) {
-      return isset($field_data) ? $field_data : null;
-    };
-  }
+    if (!is_array($field)) {
+      return null;
+    }
 
-  /**
-   * Resolves nullable numeric fields
-   *
-   * @return function The field type resolver
-   * @since  0.4.0
-   * @access private
-   */
-  private static function resolve_numeric_field()
-  {
-    return function ($field_data) {
-      return is_numeric($field_data) ? $field_data : null;
-    };
+    ['multiple' => $multiple, 'clone' => $clone] = $field;
+    $resolved_type = self::get_field_graphql_type_name($field);
+    if ($multiple) {
+      $resolved_type = ['list_of' => $resolved_type];
+    }
+    if ($clone) {
+      $resolved_type = ['list_of' => $resolved_type];
+    }
+    return $resolved_type;
   }
 
   /**
    * Gets the appropriate field resolver based on field type
    *
-   * @param string      The Metabox field type
-   * @return function The field resolver
+   * @param  string   $type The Metabox field type
+   * @return function A callback to ensure valid GraphQL field type
    * @since  0.4.0
    * @access private
    */
-  private static function get_resolver($type)
+  private static function get_safe_value_callback($type)
   {
     switch ($type) {
       case 'group':
+        return function ($field_data) {
+          return $field_data;
+        };
       case 'number':
       case 'range':
-        return self::resolve_numeric_field();
+        return function ($field_data) {
+          return is_numeric($field_data) ? $field_data : null;
+        };
       case 'switch':
       case 'checkbox':
       case 'checkbox_list':
@@ -278,7 +255,9 @@ final class WPGraphQL_MetaBox_Util
       case 'url':
       case 'wysiwyg':
       case 'single_image':
-        return self::resolve_nullable_field();
+        return function ($field_data) {
+          return isset($field_data) ? $field_data : null;
+        };
       default:
         return function () {
           return null;
@@ -287,16 +266,17 @@ final class WPGraphQL_MetaBox_Util
   }
 
   /**
-   * Resolves metabox field data by entity type
+   * Gets the field value from Meta Box
+   * Executes `rwmb_meta` for the field on the currently resolving entity
    *
-   * @param \WPGraphQL\Model    The node to resolve
-   * @param string              The metabox field id
-   * @param array               The metabox field args
-   * @return  mixed           The field contents
-   * @since  0.2.0
-   * @access private
+   * @param   \WPGraphQL\Model  $node     The node to resolve
+   * @param   string            $field_id The metabox field id
+   * @param   array             $args     The metabox field args
+   * @return  mixed             The field contents
+   * @since   0.2.0
+   * @access  private
    */
-  private static function get_field($node, $field_id, $args = null)
+  private static function get_rwmb_meta_value($node, $field_id, $args = null)
   {
     if ($node instanceof User) {
       return rwmb_meta($field_id, $args, $node->userId);
@@ -385,7 +365,7 @@ final class WPGraphQL_MetaBox_Util
       case 'user':
         return 'User';
       case 'post':
-        $post_type = true === is_array($field['post_type']) ? $field['post_type'][0] : $field['post_type'];
+        $post_type = is_array($field['post_type']) === true ? $field['post_type'][0] : $field['post_type'];
         $post_type_object = get_post_type_object($post_type);
 
         if (!$post_type_object || !$post_type_object->show_in_graphql) {
@@ -410,14 +390,14 @@ final class WPGraphQL_MetaBox_Util
               'name' => $name,
               'id' => $id
             ] = $field;
-            $graphql_type = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
+            $graphql_type = self::get_graphql_type($field);
             $fields[$graphql_name]  = [
               'type' => $graphql_type,
               'description' => $name,
               'resolve' => function ($node) use ($id) {
                 return $node[$id];
               },
-              'args' => WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type),
+              'args' => self::get_graphql_field_args($graphql_type),
             ];
 
             return $fields;
@@ -447,7 +427,7 @@ final class WPGraphQL_MetaBox_Util
    * @since   0.3.0
    * @access  private
    */
-  private static function resolve_field($field_config, $field_resolver)
+  private static function get_resolved_field_value($field_config, $field_resolver)
   {
     // cloned or multiple field
     if (is_array($field_config)) {
