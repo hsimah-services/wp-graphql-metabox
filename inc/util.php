@@ -168,9 +168,9 @@ final class WPGraphQL_MetaBox_Util
    * @param   string      $type The GraphQL type name
    * @return  array|null  The GraphQL arg config
    * @since   0.1.0
-   * @access  private
+   * @access  public
    */
-  private static function get_graphql_field_args($type)
+  public static function get_graphql_field_args($type)
   {
     switch ($type) {
       case 'MBSingleImage':
@@ -197,6 +197,12 @@ final class WPGraphQL_MetaBox_Util
   {
     if (!is_array($field)) {
       return null;
+    }
+    $post_type = array_key_exists('post_type', $field) ? $field['post_type'] : null;
+    $is_union_type = is_array($post_type) && count($post_type) > 1;
+
+    if ($is_union_type) {
+      return self::resolve_graphql_union_type($field);
     }
 
     ['multiple' => $multiple, 'clone' => $clone] = $field;

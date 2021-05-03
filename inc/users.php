@@ -48,7 +48,7 @@ final class WPGraphQL_MetaBox_Users
       return;
     }
 
-    $graphql_type_name = WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
+    $graphql_type_name = WPGraphQL_MetaBox_Util::get_graphql_type($field);
 
     // check if this field type is registered in the schema
     if (!$graphql_type_name) {
@@ -56,8 +56,8 @@ final class WPGraphQL_MetaBox_Users
     }
 
 
-    $resolve_field_callback = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field, ['object_type' => 'user']);
-    $graphql_field_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type_name);
+    $resolve_field_callback = WPGraphQL_MetaBox_Util::get_graphql_field_resolver_callback($field, ['object_type' => 'user']);
+    $graphql_field_args = WPGraphQL_MetaBox_Util::get_graphql_field_args($graphql_type_name);
 
     register_graphql_field(
       'User',

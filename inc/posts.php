@@ -58,19 +58,15 @@ final class WPGraphQL_MetaBox_Posts
       return;
     }
 
-    $post_type = array_key_exists('post_type', $field) ? $field['post_type'] : null;
-    $is_union_type = is_array($post_type) && count($post_type) > 1;
-    $graphql_type_name = $is_union_type ?
-      WPGraphQL_MetaBox_Util::resolve_graphql_union_type($field)
-      : WPGraphQL_MetaBox_Util::resolve_graphql_type($field);
+    $graphql_type_name =  WPGraphQL_MetaBox_Util::get_graphql_type($field);
 
     // check if this field type is registered in the schema
     if (!$graphql_type_name) {
       return;
     }
 
-    $resolve_field_callback = WPGraphQL_MetaBox_Util::resolve_graphql_resolver($field);
-    $graphql_field_args = WPGraphQL_MetaBox_Util::resolve_graphql_args($graphql_type_name);
+    $resolve_field_callback = WPGraphQL_MetaBox_Util::get_graphql_field_resolver_callback($field);
+    $graphql_field_args = WPGraphQL_MetaBox_Util::get_graphql_field_args($graphql_type_name);
 
     register_graphql_fields($post_type_object->graphql_single_name, [
       $field['graphql_name']  => [
