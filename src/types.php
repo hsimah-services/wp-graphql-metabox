@@ -69,5 +69,17 @@ final class WPGraphQL_MetaBox_Types
                 ],
             ],
         ]);
+
+        register_graphql_object_type('MBImageAdvanced', [
+            'description' => __('Meta Box Image Advanced type', 'wpgraphql-metabox'),
+            'fields'      => [
+                'images' => [
+                    'type'        => [
+                        'list_of' => 'MBSingleImage',
+                    ],
+                    'description' => __('List of single images', 'wpgraphql-metabox'),
+                ],
+            ],
+        ]);
     }
 }
