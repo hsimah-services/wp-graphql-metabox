@@ -83,7 +83,7 @@ final class WPGraphQL_MetaBox_Util
      * @since  0.3.0
      * @access public
      */
-    public static function resolve_graphql_resolver($field, $meta_args = null)
+    public static function resolve_graphql_resolver($field, $meta_args = [])
     {
         [
             'type' => $type,
@@ -285,7 +285,7 @@ final class WPGraphQL_MetaBox_Util
      * @since  0.2.0
      * @access private
      */
-    private static function get_field($node, $field_id, $args = null)
+    private static function get_field($node, $field_id, $args = [])
     {
         if ($node instanceof User) {
             return rwmb_meta($field_id, $args, $node->userId);
