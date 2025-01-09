@@ -316,7 +316,6 @@ final class WPGraphQL_MetaBox_Util
             case 'file_upload':
             case 'hidden':
             case 'image':
-            case 'image_advanced':
             case 'image_select':
             case 'image_upload':
             case 'map':
@@ -371,6 +370,8 @@ final class WPGraphQL_MetaBox_Util
                 return 'Float';
             case 'single_image':
                 return 'MBSingleImage';
+            case 'image_advanced':
+                return 'MBImageAdvanced';
             case 'user':
                 return 'User';
             case 'post':
